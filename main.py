@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from IPython.display import clear_output
+from scipy import stats as st
 
 f = 567.2
 b = 92.226
@@ -15,7 +16,6 @@ real_m = 178
 def distanceZframe(disparity):
     #Estimate a main disparity
     d = np.average(disparity) 
-    #print("Main Disparity: ",d)
     #Determine the distance in mm
     z=(b*f)/(d + 1e-5) #mm
     #convert in m
@@ -31,23 +31,28 @@ def imshow(wname,title, img):
     plt.title(title)
     plt.pause(0.0001)
 
-def computeDisparityMap(frameL, frameR, numDisp=16, blockSize=15):
+def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=99):
     #compute central frames
     center = frameL.shape
     centerY = int(center[0]/2)
     centerX = int(center[1]/2)
-    interval = 30
+    interval = 50
 
     #Get image center box
     imgL = cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
     imgR = cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
 
+
     #initialize stereo disparity
     stereoMatcher = cv2.StereoBM_create(numDisparities=numDisp, blockSize=blockSize)
+    #stereoMatcher.setSpeckleWindowSize(5)
+    #stereoMatcher.setSpeckleRange(5)
     
     #compute disparity map: gray or colour
     disparity = stereoMatcher.compute(imgL, imgR)
 
+    #dispnorm = cv2.normalize(disparity, disparity, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U,)
+    
     #show disparity frame 
     #imshow("Disparity","Disparity map", disparity)
 
