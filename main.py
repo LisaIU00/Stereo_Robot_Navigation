@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from IPython.display import clear_output
 from scipy import stats as st
+import rect as rc
 
 f = 567.2
 b = 92.226
@@ -31,7 +32,7 @@ def imshow(wname,title, img):
     plt.title(title)
     plt.pause(0.0001)
 
-def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=99):
+def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=15):
     #compute central frames
     center = frameL.shape
     centerY = int(center[0]/2)
@@ -42,6 +43,9 @@ def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=99):
     imgL = cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
     imgR = cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
 
+    '''imgL = cv2.remap(imgL, Left_Stereo_Map[0], Left_Stereo_Map[1], cv2.INTER_LANCZOS4,cv2.BORDER_CONSTANT, 0)
+    imgR = cv2.remap(imgR, Right_Stereo_Map[0], Right_Stereo_Map[1], cv2.INTER_LANCZOS4,cv2.BORDER_CONSTANT, 0)'''
+
 
     #initialize stereo disparity
     stereoMatcher = cv2.StereoBM_create(numDisparities=numDisp, blockSize=blockSize)
@@ -51,8 +55,10 @@ def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=99):
     #compute disparity map: gray or colour
     disparity = stereoMatcher.compute(imgL, imgR)
 
-    #dispnorm = cv2.normalize(disparity, disparity, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U,)
-    
+    #disparity = cv2.normalize(disparity, None, alpha=0, beta=128, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+
+    print("Disparity range:{ ", disparity.min()," , ",disparity.max()," }")
+
     #show disparity frame 
     #imshow("Disparity","Disparity map", disparity)
 
@@ -109,6 +115,8 @@ def playVideoS(video):
 
 def main():
 
+    #Left_Stereo_Map,Right_Stereo_Map = rc.rectify()
+
     video_pathL = 'robot-navigation-video/robotL.avi'
     videoL = cv2.VideoCapture(video_pathL)
     video_pathR = 'robot-navigation-video/robotR.avi'
@@ -127,6 +135,10 @@ def main():
             #extract frames
             retL, frameL = videoL.read()
             retR, frameR = videoR.read()
+
+            frameL = frameL.astype(np.uint8)
+            frameR = frameR.astype(np.uint8)
+     
             
             #check frames
             if not retL or frameL is None or  not retR or frameR is None:
