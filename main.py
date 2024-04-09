@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from IPython.display import clear_output
 from scipy import stats as st
-import rect as rc
+
 
 f = 567.2
 b = 92.226
@@ -14,9 +14,28 @@ pattern_size = (num_h, num_w)
 real_h = 125
 real_m = 178
 
+
 def distanceZframe(disparity):
+    x,y = disparity.shape
+    disparity = disparity/16.0
+    num = 0
+    disp0 = []
+    for i in range(x):
+        for j in range(y):
+            if disparity[i][j]>0:
+                num +=1
+                disp0.append(disparity[i][j])
+
     #Estimate a main disparity
-    d = np.average(disparity) 
+    d = np.mean(disp0) 
+    
+    #Estimate a most frequent disparity
+    #counts = np.bincount(disp0)
+    #d = np.argmax(counts)
+
+    #Estimate a median disparity
+    #d = np.median(disp0) 
+
     #Determine the distance in mm
     z=(b*f)/(d + 1e-5) #mm
     #convert in m
@@ -40,24 +59,19 @@ def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=15):
     interval = 50
 
     #Get image center box
-    imgL = cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
-    imgR = cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
-
-    '''imgL = cv2.remap(imgL, Left_Stereo_Map[0], Left_Stereo_Map[1], cv2.INTER_LANCZOS4,cv2.BORDER_CONSTANT, 0)
-    imgR = cv2.remap(imgR, Right_Stereo_Map[0], Right_Stereo_Map[1], cv2.INTER_LANCZOS4,cv2.BORDER_CONSTANT, 0)'''
-
+    imgL = cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)#[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
+    imgR = cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)#[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
 
     #initialize stereo disparity
     stereoMatcher = cv2.StereoBM_create(numDisparities=numDisp, blockSize=blockSize)
-    #stereoMatcher.setSpeckleWindowSize(5)
-    #stereoMatcher.setSpeckleRange(5)
     
     #compute disparity map: gray or colour
     disparity = stereoMatcher.compute(imgL, imgR)
+    disparity = disparity[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
 
     #disparity = cv2.normalize(disparity, None, alpha=0, beta=128, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
 
-    print("Disparity range:{ ", disparity.min()," , ",disparity.max()," }")
+    #print("Disparity range:{ ", disparity.min()," , ",disparity.max()," }")
 
     #show disparity frame 
     #imshow("Disparity","Disparity map", disparity)
@@ -135,9 +149,6 @@ def main():
             #extract frames
             retL, frameL = videoL.read()
             retR, frameR = videoR.read()
-
-            frameL = frameL.astype(np.uint8)
-            frameR = frameR.astype(np.uint8)
      
             
             #check frames
@@ -145,6 +156,9 @@ def main():
                 videoL.release()
                 videoR.release()
                 break
+
+            frameL = frameL.astype(np.uint8)
+            frameR = frameR.astype(np.uint8)
             
             #compute disparity map in a central area of the reference frame (100x100 pixels)
             disparity = computeDisparityMap(frameL, frameR)
@@ -155,8 +169,8 @@ def main():
             imgL= cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)
 
             #print distance and show the frame
-            title = "Frame with distance="+str(zFrame)+" ; dmain="+str(dmain)
-            imshow("Frame",title, imgL)
+            title = "frame "+str(num_frame)+":\ndistance="+str(zFrame)+" ; dmain="+str(dmain)
+            imshow("VideoL",title, imgL)
             
             #verify if the distance zFrame[m] is below 0.8m
             if zFrame <= min_dist:
@@ -196,12 +210,14 @@ def main():
     plt.rcParams["figure.figsize"] = (20,16)
     plt.figure('difference weighted from real mm')
     plt.plot(np.arange(len(diffW)-1), diffW[1:],'m', linewidth=3)
+    
     '''
     for i in dist_minus:
-        plt.plot(i, diffW[i], "o", markersize="10")
+        plt.plot(i, diffW[i], "o", markersize="3")
     '''
+    
     plt.xlabel('frame')
-    plt.ylabel('difference W')
+    plt.ylabel('difference W [mm]')
     plt.grid()
     plt.show()
 
