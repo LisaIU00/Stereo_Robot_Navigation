@@ -1,6 +1,8 @@
 # Stereo_Robot_Navigation
 Project of the course "Computer Vision and Image Processing M" at the university of Bologna.
 
+Alma Mater Studiorum UNIBO - Master of Science in Computer Engineering
+
 Professor Di Stefano L.
 # Objective 
 Given a video sequence taken by a stereo camera mounted on a moving vehicle, project’s objective is to sense information concerning the space in front of the vehicle which may be deployed by the vehicle navigation system to automatically avoid obstacles.
