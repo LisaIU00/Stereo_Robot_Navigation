@@ -1,9 +1,12 @@
 import cv2
+import argparse
 import numpy as np
 from matplotlib import pyplot as plt
 from IPython.display import clear_output
 from scipy import stats as st
 
+
+plt.rcParams["figure.figsize"] = (15,6)
 
 f = 567.2
 b = 92.226
@@ -11,27 +14,26 @@ min_dist = 0.8
 num_h = 8
 num_w = 6
 pattern_size = (num_h, num_w)
-real_h = 125
-real_m = 178
+real_h = 178
+real_w = 125
 
+
+def getParams():
+    parser = argparse.ArgumentParser(prog='CVproject',description='Stereo Robot Navigation')
+    parser.add_argument('-d','--numDisparities',default='128',help='numDisparities parameter for disparity map algorithm',type=int)
+    parser.add_argument('-b','--blockSize',default='33',help='blocksize parameter for disparity map algorithm', type=int)
+    return parser.parse_args()
 
 def distanceZframe(disparity):
     x,y = disparity.shape
     disparity = disparity/16.0
-    num = 0
-    disp0 = []
-    for i in range(x):
-        for j in range(y):
-            if disparity[i][j]>0:
-                num +=1
-                disp0.append(disparity[i][j])
 
     #Estimate a main disparity
+    disp0 = disparity[disparity>0]
     d = np.mean(disp0) 
     
     #Estimate a most frequent disparity
-    #counts = np.bincount(disp0)
-    #d = np.argmax(counts)
+    #d = max(set(disp0), key = disp0.count)
 
     #Estimate a median disparity
     #d = np.median(disp0) 
@@ -50,6 +52,17 @@ def imshow(wname,title, img):
     plt.imshow(img)
     plt.title(title)
     plt.pause(0.0001)
+
+def plotgraph(title, x, y, xlabel, ylabel, nomeimg,color='m'):
+    plt.figure(title)
+    plt.plot(x, y,color, linewidth=3)
+    
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.grid()
+    plt.savefig(nomeimg)
+    plt.show(block=False)
+    
 
 def computeDisparityMap(frameL, frameR, numDisp=128, blockSize=15):
     #compute central frames
@@ -85,7 +98,11 @@ def chessboard(img):
     #find chessboard
     ret,corners = cv2.findChessboardCorners(img ,pattern_size)
 
+    
     if ret == True:
+        #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.0001)
+        #corners = cv2.cornerSubPix(img,corners,(15,15),(3,3),criteria)
+
         #display the pixel coordinates of the internal corners of the chessboard
         cv2.drawChessboardCorners(img, pattern_size, corners, ret)
 
@@ -96,8 +113,7 @@ def chessboard(img):
         w = abs(corners[num_h*(num_w-1)][0][0]-corners[0][0][0])
         h = abs(corners[num_h-1][0][1]-corners[0][0][1])
 
-        return w,h
-    return 0,0
+    return ret, w,h
 
 #show video frames
 def playVideoS(video):
@@ -127,7 +143,7 @@ def playVideoS(video):
         #imshow("Vv", "Video", centerGray)
 
 
-def main():
+def main(blockSize,numDisp=128):
 
     #Left_Stereo_Map,Right_Stereo_Map = rc.rectify()
 
@@ -138,7 +154,7 @@ def main():
 
     diffW=[]
     diffH=[]
-    dist_minus = []
+    dist = []
 
     dh = 0
     dw = 0
@@ -161,40 +177,44 @@ def main():
             frameR = frameR.astype(np.uint8)
             
             #compute disparity map in a central area of the reference frame (100x100 pixels)
-            disparity = computeDisparityMap(frameL, frameR)
+            disparity = computeDisparityMap(frameL, frameR, numDisp, blockSize)
 
             #estimate main disparity of the frame
             zFrame, dmain = distanceZframe(disparity) #m
 
             imgL= cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)
+            imgR= cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)
 
             #print distance and show the frame
             title = "frame "+str(num_frame)+":\ndistance="+str(zFrame)+" ; dmain="+str(dmain)
             imshow("VideoL",title, imgL)
             
+            dist.append(zFrame)
+            
             #verify if the distance zFrame[m] is below 0.8m
             if zFrame <= min_dist:
                 #save number of frame
-                dist_minus.append(num_frame)
                 print("The distance from camera to the obstable is minus then", min_dist,"m :   ",zFrame)
                 
 
             #Find chessboard & Compute dimension of the chessboard
-            wL,hL =chessboard(imgL)
-
+            ret, wL,hL = chessboard(imgR)
+            
             #if chessboard was found
-            if(wL>0 and hL>0):
+            if(ret == True):
+                
                 #Compare the size of the chessboard computed with the real ones
                 z_mm = zFrame*1000
                 W_mm = (z_mm*wL)/f
                 H_mm = (z_mm*hL)/f
 
-                dw = abs(real_m-W_mm)
+
+                dw = abs(real_w-W_mm)
                 dh = abs(real_h-H_mm)
 
             #save calculated difference
-            diffW.append(dw)
-            diffH.append(dh)
+                diffW.append(dw)
+                diffH.append(dh)
 
             num_frame+=1
 
@@ -207,21 +227,14 @@ def main():
 
 
     #plot graph with difference between real W and calculated W for each frame
-    plt.rcParams["figure.figsize"] = (20,16)
-    plt.figure('difference weighted from real mm')
-    plt.plot(np.arange(len(diffW)-1), diffW[1:],'m', linewidth=3)
+    plotgraph('distance Z',np.arange(num_frame-1), dist[1:],  'frame', 'z [m]', 'z_plot.png')
+    plotgraph('difference weighted from real',np.arange(len(diffW)-1), diffW[1:],  'frame', 'difference W [mm]', 'Wdiff_plot.png')
+    plotgraph('difference heigh from real',np.arange(len(diffH)-1), diffH[1:],  'frame', 'difference H [mm]', 'diffH_plot.png')
     
-    '''
-    for i in dist_minus:
-        plt.plot(i, diffW[i], "o", markersize="3")
-    '''
-    
-    plt.xlabel('frame')
-    plt.ylabel('difference W [mm]')
-    plt.grid()
-    plt.show()
 
     
     
 if __name__ == "__main__":
-    main()
+    args =getParams()
+
+    main(args.blockSize,args.numDisparities)
