@@ -8,7 +8,7 @@ F = 567.2
 B = 92.226
 
 #alarm distance (in meters)
-MIN_DIST = 0.8
+MIN_DIST = 800
 
 #chessboard parameters
 NUM_H = 8

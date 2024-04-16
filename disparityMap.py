@@ -5,7 +5,7 @@ import utils
 import constant as c
 
 def distanceZframe(disparity):
-    disp0 = disparity[disparity>0]/16
+    disp0 = disparity[disparity>=0]/16
 
     #Estimate a main disparity
     d = np.mean(disp0) 
@@ -18,10 +18,8 @@ def distanceZframe(disparity):
 
     #Determine the distance in mm
     z=(c.B*c.F)/d #mm
-    #convert in m
-    z_m = z/1000 #m
     
-    return z_m, d
+    return z, d
 
 def computeDisparityMap(imgL, imgR, numDisp=128, blockSize=33, interval=50, showDisparity=False):
 

@@ -13,7 +13,7 @@ def main(videoL, videoR, showFrame = False):
 
     try:
         
-        df = pd.DataFrame(columns = ['dMain','z in mm','Z in m','alarm','Hdiff','Wdiff'])
+        df = pd.DataFrame(columns = ['dMain','z [mm]','Z [m]','alarm','Hdiff','Wdiff'])
 
         num_frame = 0
         dh = 0
@@ -29,9 +29,6 @@ def main(videoL, videoR, showFrame = False):
                 videoL.release()
                 videoR.release()
                 break
-
-            frameL = frameL.astype(np.uint8)
-            frameR = frameR.astype(np.uint8)
             
             imgL= cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)
             imgR= cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)
@@ -40,10 +37,10 @@ def main(videoL, videoR, showFrame = False):
             disparity = disp.computeDisparityMap(imgL, imgR)
 
             #estimate main disparity of the frame
-            zFrame, dmain = disp.distanceZframe(disparity) #m
+            zFrame, dmain = disp.distanceZframe(disparity) #mm
 
             #print distance and show the frame
-            if show:
+            if showFrame:
                 title = "frame "+str(num_frame)+":\ndistance="+str(zFrame)+" ; dmain="+str(dmain)
                 u.imshow("VideoL",title, imgL)
             
@@ -63,7 +60,7 @@ def main(videoL, videoR, showFrame = False):
             if(ret == True):
                 
                 #Compare the size of the chessboard computed with the real ones
-                z_mm = zFrame*1000
+                z_mm = zFrame
                 W_mm = (z_mm*wL)/c.F
                 H_mm = (z_mm*hL)/c.F
                 
@@ -71,15 +68,15 @@ def main(videoL, videoR, showFrame = False):
                 dh = abs(c.REAL_H-H_mm)
 
 
-            output = {
-                        'dMain': dmain,
-                        'z in mm': zFrame*1000,
-                        'Z in m': zFrame,
-                        'alarm': alarm,
-                        'Hdiff': dw,
-                        'Wdiff': dh
-                        }
-            df.loc[len(df)] = output
+                output = {
+                            'dMain': dmain,
+                            'z [mm]': zFrame,
+                            'Z [m]': zFrame/1000,
+                            'alarm': alarm,
+                            'Hdiff': dh,
+                            'Wdiff': dw
+                            }
+                df.loc[len(df)] = output
 
             num_frame += 1
 
