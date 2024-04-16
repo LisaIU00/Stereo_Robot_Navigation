@@ -18,7 +18,7 @@ def main(videoL, videoR,showFrame = False):
         num_frame = 0
         dh = 0
         dw = 0
-        dmain_prec = 0
+
         while(videoL.isOpened() and videoR.isOpened()):
             #extract frames
             retL, frameL = videoL.read()
@@ -34,14 +34,10 @@ def main(videoL, videoR,showFrame = False):
             imgR= cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)
             
             #compute disparity map in a central area of the reference frame (100x100 pixels)
-            if num_frame>0:
-                disparity = disp.computeDisparityMap(imgL, imgR, dmain_prec)
-            else:
-                disparity = disp.computeDisparityMap(imgL, imgR)
+            disparity = disp.computeDisparityMap(imgL, imgR)
 
             #estimate main disparity of the frame
             zFrame, dmain = disp.distanceZframe(disparity) #mm
-            dmain_prec = dmain
 
             #print distance and show the frame
             if showFrame:
