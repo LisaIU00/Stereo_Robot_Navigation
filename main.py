@@ -9,7 +9,7 @@ import constant as c
 import utils as u
 
 
-def main(videoL, videoR, showFrame = False):
+def main(videoL, videoR,showFrame = False):
 
     try:
         
@@ -18,7 +18,7 @@ def main(videoL, videoR, showFrame = False):
         num_frame = 0
         dh = 0
         dw = 0
-
+        dmain_prec = 0
         while(videoL.isOpened() and videoR.isOpened()):
             #extract frames
             retL, frameL = videoL.read()
@@ -34,10 +34,14 @@ def main(videoL, videoR, showFrame = False):
             imgR= cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)
             
             #compute disparity map in a central area of the reference frame (100x100 pixels)
-            disparity = disp.computeDisparityMap(imgL, imgR)
+            if num_frame>0:
+                disparity = disp.computeDisparityMap(imgL, imgR, dmain_prec)
+            else:
+                disparity = disp.computeDisparityMap(imgL, imgR)
 
             #estimate main disparity of the frame
             zFrame, dmain = disp.distanceZframe(disparity) #mm
+            dmain_prec = dmain
 
             #print distance and show the frame
             if showFrame:
@@ -45,7 +49,7 @@ def main(videoL, videoR, showFrame = False):
                 u.imshow("VideoL",title, imgL)
             
             
-            #verify if the distance zFrame[m] is below 0.8m
+            #verify if the distance zFrame[m] is below 800mm
             if zFrame <= c.MIN_DIST:
                 #save number of frame
                 print("The distance from camera to the obstable is minus then", c.MIN_DIST,"m :   ",zFrame)
@@ -54,7 +58,7 @@ def main(videoL, videoR, showFrame = False):
                 alarm = 0
                 
             #Find chessboard & Compute dimension of the chessboard
-            ret, wL,hL = chess.chessboard(imgR)
+            ret, wL,hL = chess.chessboard(imgL)
             
             #if chessboard was found
             if(ret == True):

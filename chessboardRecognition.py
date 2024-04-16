@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 import constant as c
+import utils as u
 
 
-def chessboard(img):
+def chessboard(img, showChess=False):
     w=0
     h=0
-
-    #find chessboard
+    #find chessboard 
     ret,corners = cv2.findChessboardCorners(img ,c.pattern_size)
 
     
@@ -19,7 +19,8 @@ def chessboard(img):
         cv2.drawChessboardCorners(img, c.pattern_size, corners, ret)
 
         #show frame with corners chessboard
-        #imshow("Chessboard", "Chessboard", img)
+        if showChess:
+            u.imshow("Chessboard", "Chessboard", img)
     
         #compute pixel dimention of chessboard
         w = abs(corners[c.NUM_H*(c.NUM_W-1)][0][0]-corners[0][0][0])
