@@ -23,7 +23,9 @@ def chessboard(img, showChess=False):
             u.imshow("Chessboard", "Chessboard", img)
     
         #compute pixel dimention of chessboard
-        w = abs(corners[c.NUM_H*(c.NUM_W-1)][0][0]-corners[0][0][0])
+        #w = abs(corners[c.NUM_H*(c.NUM_W-1)][0][0]-corners[0][0][0])
+        w = abs(corners[c.NUM_H-1][0][0]-corners[corners.shape[0]-1][0][0])
         h = abs(corners[c.NUM_H-1][0][1]-corners[0][0][1])
+
 
     return ret, w,h

@@ -21,7 +21,7 @@ def distanceZframe(disparity):
     
     return z, d
 
-def computeDisparityMap(imgL, imgR, numDisp=128, blockSize=33, interval=50, showDisparity=False):
+def computeDisparityMap(imgL, imgR, showDisparity=False, numDisp=128, blockSize=83, interval=50):
 
     #initialize stereo disparity
     stereoMatcher = cv2.StereoBM_create(numDisparities=numDisp, blockSize=blockSize)

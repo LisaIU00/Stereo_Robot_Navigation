@@ -4,8 +4,8 @@ video_pathL = 'robot-navigation-video/robotL.avi'
 video_pathR = 'robot-navigation-video/robotR.avi'
 
 #camera parameters
-F = 567.2
-B = 92.226
+F = 567.2 #pixel
+B = 92.226 #mm
 
 #alarm distance (in meters)
 MIN_DIST = 800

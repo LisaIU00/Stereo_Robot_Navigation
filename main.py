@@ -9,11 +9,11 @@ import constant as c
 import utils as u
 
 
-def main(videoL, videoR,showFrame = False):
+def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = True):
 
     try:
         
-        df = pd.DataFrame(columns = ['dMain','z [mm]','Z [m]','alarm','Hdiff','Wdiff'])
+        df = pd.DataFrame(columns = ['dMain','z [mm]','alarm','H difference','W difference'])
 
         num_frame = 0
         dh = 0
@@ -34,7 +34,7 @@ def main(videoL, videoR,showFrame = False):
             imgR= cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)
             
             #compute disparity map in a central area of the reference frame (100x100 pixels)
-            disparity = disp.computeDisparityMap(imgL, imgR)
+            disparity = disp.computeDisparityMap(imgL, imgR, showDisparity)
 
             #estimate main disparity of the frame
             zFrame, dmain = disp.distanceZframe(disparity) #mm
@@ -45,7 +45,7 @@ def main(videoL, videoR,showFrame = False):
                 u.imshow("VideoL",title, imgL)
             
             
-            #verify if the distance zFrame[m] is below 800mm
+            #verify if the distance zFrame[mm] is below 800mm
             if zFrame <= c.MIN_DIST:
                 #save number of frame
                 print("The distance from camera to the obstable is minus then", c.MIN_DIST,"m :   ",zFrame)
@@ -54,7 +54,7 @@ def main(videoL, videoR,showFrame = False):
                 alarm = 0
                 
             #Find chessboard & Compute dimension of the chessboard
-            ret, wL,hL = chess.chessboard(imgL)
+            ret, wL,hL = chess.chessboard(imgL, showChess)
             
             #if chessboard was found
             if(ret == True):
@@ -71,10 +71,9 @@ def main(videoL, videoR,showFrame = False):
                 output = {
                             'dMain': dmain,
                             'z [mm]': zFrame,
-                            'Z [m]': zFrame/1000,
                             'alarm': alarm,
-                            'Hdiff': dh,
-                            'Wdiff': dw
+                            'H difference': dh,
+                            'W difference': dw
                             }
                 df.loc[len(df)] = output
 
@@ -87,9 +86,10 @@ def main(videoL, videoR,showFrame = False):
         print("Released Video Resource")
 
     # plotting dataframe
-    df.plot(subplots=True, grid=True)
+    df.plot(subplots=True, figsize=(20,15), grid=True)
     plt.tight_layout()
     plt.savefig("result_plot.png")
+
     plt.show()
 
     
