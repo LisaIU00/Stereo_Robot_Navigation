@@ -10,21 +10,18 @@ import utils as u
 
 
 def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = True):
-    att_first = True
-    first = False
-    att_sec = False
-    second = False
-    numF = 0
-    numS = 0
-    sumF = 0
-    sumS = 0
+
     try:
         
-        df = pd.DataFrame(columns = ['dMain','z [mm]','alarm','H difference','W difference'])
+        df = pd.DataFrame(columns = ['dMain','z [mm]','alarm','H difference','W difference', 'Average difference'])
 
         num_frame = 0
         dh = 0
         dw = 0
+        
+        alarm_range = []
+        start_alarm = 0
+        prec_alarm = 0
 
         while(videoL.isOpened() and videoR.isOpened()):
             #extract frames
@@ -50,30 +47,14 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
             if showFrame:
                 title = "frame "+str(num_frame)+":\ndistance="+str(zFrame)+" ; dmain="+str(dmain)
                 u.imshow("VideoL",title, imgL)
-            
-            
+
             #verify if the distance zFrame[mm] is below 800mm
             if zFrame <= c.MIN_DIST:
                 #save number of frame
                 print("The distance from camera to the obstable is minus then", c.MIN_DIST,"m :   ",zFrame)
                 alarm = 1
-                if att_first:
-                    att_first=False
-                    first=True
-                if att_sec:
-                    att_sec=False
-                    second=True
-                if first:
-                    numF+=1
-                if second:
-                    numS += 1
             else:
-                if first:
-                    first=False
-                    att_sec = True
-                if second:
-                    second=False
-                alarm = 0
+                alarm = 0           
                 
             #Find chessboard & Compute dimension of the chessboard
             ret, wL,hL = chess.chessboard(imgL, showChess)
@@ -89,31 +70,54 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
                 dw = abs(c.REAL_W-W_mm)
                 dh = abs(c.REAL_H-H_mm)
 
-                if first:
-                    sumF += (dh+dw)/2
-                else:
-                    if second:
-                        sumS += (dh+dw)/2
-
                 output = {
                             'dMain': dmain,
                             'z [mm]': zFrame,
                             'alarm': alarm,
                             'H difference': dh,
-                            'W difference': dw
+                            'W difference': dw,
+                            'Average difference': (dh+dw)/2
                             }
                 df.loc[len(df)] = output
 
-            num_frame += 1
-
+                if alarm == 1:
+                    if prec_alarm == 0:
+                        start_alarm = num_frame
+                    prec_alarm = 1
+                else:
+                    if prec_alarm == 1:
+                        alarm_range.append([start_alarm, num_frame-1])
+                    prec_alarm=0
+                num_frame += 1 
+                
     except KeyboardInterrupt:
         # If we press stop (jupyter GUI) release the video
         videoL.release()
         videoR.release()
         print("Released Video Resource")
 
-    print("PRIMO: ",sumF/numF)
-    print("SECONDO: ", sumS/numS)
+    general_differenceH = []
+    general_differenceW = []
+    general_difference = []
+
+    for i in range(len(alarm_range)):
+        sum = 0
+        sumH = 0
+        sumW = 0
+        num = 0
+        for n in (alarm_range[i][0], alarm_range[i][1], 1):
+            sum += df['Average difference'][n]
+            sumH += df['H difference'][n]
+            sumW += df['W difference'][n]
+            num += 1
+        general_difference.append(sum/num)
+        general_differenceH.append(sumH/num)
+        general_differenceW.append(sumW/num)
+    print(alarm_range)
+    print("difference between computed and real: ", general_difference)
+    print("H difference between computed and real: ", general_differenceH)
+    print("W difference between computed and real: ", general_differenceW)
+
 
     # plotting dataframe
     df.plot(subplots=True,grid=True)
