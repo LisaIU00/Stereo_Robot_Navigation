@@ -10,7 +10,14 @@ import utils as u
 
 
 def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = True):
-
+    att_first = True
+    first = False
+    att_sec = False
+    second = False
+    numF = 0
+    numS = 0
+    sumF = 0
+    sumS = 0
     try:
         
         df = pd.DataFrame(columns = ['dMain','z [mm]','alarm','H difference','W difference'])
@@ -50,7 +57,22 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
                 #save number of frame
                 print("The distance from camera to the obstable is minus then", c.MIN_DIST,"m :   ",zFrame)
                 alarm = 1
+                if att_first:
+                    att_first=False
+                    first=True
+                if att_sec:
+                    att_sec=False
+                    second=True
+                if first:
+                    numF+=1
+                if second:
+                    numS += 1
             else:
+                if first:
+                    first=False
+                    att_sec = True
+                if second:
+                    second=False
                 alarm = 0
                 
             #Find chessboard & Compute dimension of the chessboard
@@ -67,6 +89,11 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
                 dw = abs(c.REAL_W-W_mm)
                 dh = abs(c.REAL_H-H_mm)
 
+                if first:
+                    sumF += (dh+dw)/2
+                else:
+                    if second:
+                        sumS += (dh+dw)/2
 
                 output = {
                             'dMain': dmain,
@@ -85,8 +112,11 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
         videoR.release()
         print("Released Video Resource")
 
+    print("PRIMO: ",sumF/numF)
+    print("SECONDO: ", sumS/numS)
+
     # plotting dataframe
-    df.plot(subplots=True, figsize=(20,15), grid=True)
+    df.plot(subplots=True,grid=True)
     plt.tight_layout()
     plt.savefig("result_plot.png")
 
