@@ -7,13 +7,12 @@ import utils as u
 def chessboard(img, showChess=False):
     w=0
     h=0
+
     #find chessboard 
     ret,corners = cv2.findChessboardCorners(img ,c.pattern_size)
 
     
     if ret == True:
-        #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.0001)
-        #corners = cv2.cornerSubPix(img,corners,(15,15),(3,3),criteria)
 
         #display the pixel coordinates of the internal corners of the chessboard
         cv2.drawChessboardCorners(img, c.pattern_size, corners, ret)
@@ -23,7 +22,6 @@ def chessboard(img, showChess=False):
             u.imshow("Chessboard", "Chessboard", img)
     
         #compute pixel dimention of chessboard
-        #w = abs(corners[c.NUM_H*(c.NUM_W-1)][0][0]-corners[0][0][0])
         w = abs(corners[c.NUM_H-1][0][0]-corners[corners.shape[0]-1][0][0])
         h = abs(corners[c.NUM_H-1][0][1]-corners[0][0][1])
 

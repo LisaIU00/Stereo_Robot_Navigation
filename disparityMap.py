@@ -21,13 +21,17 @@ def distanceZframe(disparity):
     
     return z, d
 
-def computeDisparityMap(imgL, imgR, showDisparity=False, numDisp=128, blockSize=83, interval=50):
+def computeDisparityMap(imgL, imgR, showDisparity=False, numDisp=128, blockSize=83, interval=40):
 
     #initialize stereo disparity
     stereoMatcher = cv2.StereoBM_create(numDisparities=numDisp, blockSize=blockSize)
     
     #compute disparity map: gray or colour
     disparity = stereoMatcher.compute(imgL, imgR)
+
+    #show disparity frame 
+    if showDisparity:
+        utils.imshow("Disparity","Disparity map", disparity)
 
     #take only central frames
     center = imgL.shape
@@ -36,10 +40,6 @@ def computeDisparityMap(imgL, imgR, showDisparity=False, numDisp=128, blockSize=
 
     disparity = disparity[centerY-interval:centerY+interval, centerX-interval:centerX+interval]
 
-    #print("Disparity range:{ ", disparity.min()," , ",disparity.max()," }")
-
-    #show disparity frame 
-    if showDisparity:
-        utils.imshow("Disparity","Disparity map", disparity)
+    
 
     return disparity

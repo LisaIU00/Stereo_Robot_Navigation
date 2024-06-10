@@ -13,18 +13,17 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
 
     try:
         
-        df = pd.DataFrame(columns = ['dMain','z [mm]','alarm','H difference','W difference', 'Average difference'])
+        #initialization of variables useful later
+        df = pd.DataFrame(columns = ['dMain','z [mm]','alarm', 'H*W difference'])
 
         num_frame = 0
         dh = 0
         dw = 0
-        
-        alarm_range = []
-        start_alarm = 0
-        prec_alarm = 0
 
+        #run the body of the while loop until have finished examining each frame of the video
         while(videoL.isOpened() and videoR.isOpened()):
-            #extract frames
+
+            #extract frames from video
             retL, frameL = videoL.read()
             retR, frameR = videoR.read()
             
@@ -34,60 +33,56 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
                 videoR.release()
                 break
             
+            #convert the frame using cv2.COLOR_BGR2GRAY color space
             imgL= cv2.cvtColor(frameL, cv2.COLOR_BGR2GRAY)
             imgR= cv2.cvtColor(frameR, cv2.COLOR_BGR2GRAY)
             
-            #compute disparity map in a central area of the reference frame (100x100 pixels)
+            #compute disparity map in a central area of the reference frame (default 80x80 pixels)
             disparity = disp.computeDisparityMap(imgL, imgR, showDisparity)
 
-            #estimate main disparity of the frame
+            #estimate the distance z from the obstacle (zFrame) and the mean disparity (dmain) of the frame from disparity map
             zFrame, dmain = disp.distanceZframe(disparity) #mm
 
-            #print distance and show the frame
+            #print distance and show the frame if showFrame=True (default = False)
             if showFrame:
                 title = "frame "+str(num_frame)+":\ndistance="+str(zFrame)+" ; dmain="+str(dmain)
                 u.imshow("VideoL",title, imgL)
 
             #verify if the distance zFrame[mm] is below 800mm
             if zFrame <= c.MIN_DIST:
-                #save number of frame
                 print("The distance from camera to the obstable is minus then", c.MIN_DIST,"m :   ",zFrame)
+                #if the condition is verified then we are in an alarm state, set the alarm variable to 1
                 alarm = 1
             else:
                 alarm = 0           
                 
             #Find chessboard & Compute dimension of the chessboard
             ret, wL,hL = chess.chessboard(imgL, showChess)
+            #ret = True if the chessboard was found;
+            #wL and hL indicate the estimated size of the chessboard in pixels.
             
-            #if chessboard was found
+            #if chessboard was found:
             if(ret == True):
-                
-                #Compare the size of the chessboard computed with the real ones
+                #compute estimated dimension of the chessboard from pixel to mm
                 z_mm = zFrame
                 W_mm = (z_mm*wL)/c.F
                 H_mm = (z_mm*hL)/c.F
-                
-                dw = abs(c.REAL_W-W_mm)
-                dh = abs(c.REAL_H-H_mm)
+                dim_mm = W_mm*H_mm
 
+                #Compare the size of the chessboard computed with the real ones
+                '''dw = abs(c.REAL_W-W_mm)
+                dh = abs(c.REAL_H-H_mm)'''
+                dd = abs(c.REAL_DIM-dim_mm)
+
+                #create output plot
                 output = {
                             'dMain': dmain,
                             'z [mm]': zFrame,
                             'alarm': alarm,
-                            'H difference': dh,
-                            'W difference': dw,
-                            'Average difference': (dh+dw)/2
+                            'H*W difference':dd
                             }
                 df.loc[len(df)] = output
 
-                if alarm == 1:
-                    if prec_alarm == 0:
-                        start_alarm = num_frame
-                    prec_alarm = 1
-                else:
-                    if prec_alarm == 1:
-                        alarm_range.append([start_alarm, num_frame-1])
-                    prec_alarm=0
                 num_frame += 1 
                 
     except KeyboardInterrupt:
@@ -96,27 +91,6 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
         videoR.release()
         print("Released Video Resource")
 
-    general_differenceH = []
-    general_differenceW = []
-    general_difference = []
-
-    for i in range(len(alarm_range)):
-        sum = 0
-        sumH = 0
-        sumW = 0
-        num = 0
-        for n in (alarm_range[i][0], alarm_range[i][1], 1):
-            sum += df['Average difference'][n]
-            sumH += df['H difference'][n]
-            sumW += df['W difference'][n]
-            num += 1
-        general_difference.append(sum/num)
-        general_differenceH.append(sumH/num)
-        general_differenceW.append(sumW/num)
-    print(alarm_range)
-    print("difference between computed and real: ", general_difference)
-    print("H difference between computed and real: ", general_differenceH)
-    print("W difference between computed and real: ", general_differenceW)
 
 
     # plotting dataframe
@@ -128,8 +102,7 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
 
     
 if __name__ == "__main__":
-    #args = u.getParams()
-
+    #capturing from video files
     videoL = cv2.VideoCapture(c.video_pathL)
     videoR = cv2.VideoCapture(c.video_pathR)
 
