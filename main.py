@@ -50,7 +50,7 @@ def main(videoL, videoR,showFrame = False, showDisparity = False, showChess = Tr
 
             #verify if the distance zFrame[mm] is below 800mm
             if zFrame <= c.MIN_DIST:
-                print("The distance from camera to the obstable is minus then", c.MIN_DIST,"m :   ",zFrame)
+                print("The distance from camera to the obstable is minus then", c.MIN_DIST,"mm :   ",zFrame)
                 #if the condition is verified then we are in an alarm state, set the alarm variable to 1
                 alarm = 1
             else:
